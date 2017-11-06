@@ -91,7 +91,7 @@ class Asset(threading.Thread):
             print("key unknown: %s" % k)
 
     def _configureDB(self):
-        for dbname in ['blanket', 'blouse', 'shoe']:
+        for dbname in ['blanket', 'blouse', 'shoe', 'passenger']:
             try:
                 db = self._couch[dbname]
             except Exception as e:
@@ -136,6 +136,9 @@ class Asset(threading.Thread):
 
             for b in db:
                 blanket = db[b]
+                if "alarm" in blanket:
+                    if "hour" in blanket['alarm'] and "minute" in blanket['alarm'] and "enabled" in blanket['alarm'] and blanket['alarm']['enabled'] is True:
+                        print("ALARM found:%s" % b)
 
             self._update_alarm_time = time.time()
 
