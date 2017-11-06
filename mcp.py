@@ -81,6 +81,16 @@ class Asset(threading.Thread):
                 self._setAssetLastSeen(keys[0], keys[1])
             if "battery" == keys[2]:
                 self._setAssetBatteryLevel(keys[0], keys[1], v)
+            if "button" == keys[2]:
+                self._mqclient.publish("blouse/000186A0/display/intensity", 0)
+                self._mqclient.publish("blouse/000186A0/display/txt/0", "================")
+                self._mqclient.publish("blouse/000186A0/display/txt/1", "|| (c) Carla  ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/2", "||            ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/3", "||    THANK   ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/4", "||            ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/5", "||     YOU    ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/6", "||            ||")
+                self._mqclient.publish("blouse/000186A0/display/txt/7", "================")
         else:
             print("key unknown: %s" % k)
 
