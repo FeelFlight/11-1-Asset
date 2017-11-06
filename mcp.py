@@ -126,6 +126,9 @@ class Asset(threading.Thread):
         self._mqclient.on_message    = self._on_message
         self._mqclient.on_disconnect = self._on_disconnect
         self._mqclient.loop_start()
+        self._update_heating_time    = time.time()
+        self._update_alarm_time      = time.time()
+        self._update_blouse_time     = time.time()
         self.start()
 
     def _on_connect(self, client, userdata, rc, msg):
@@ -138,31 +141,37 @@ class Asset(threading.Thread):
     def _on_disconnect(self, client, userdata, msg):
         print("Disconnected")
 
-    def _check_for_wakeup(self):
-        pass
+    def _check_for_alarm(self):
+        if time.time() - self._update_alarm_time > 1:
+            self._update_alarm_time = time.time()
 
     def _update_heating(self):
-        db = self._couch['blanket']
+        if time.time() - self._update_heating_time > 1:
+            db = self._couch['blanket']
 
-        for b in db:
-            blanket = db[b]
-            if "heating" in blanket:
-                if "shoulder" in blanket['heating']:
-                    self._mqclient.publish("blanket/%s/heat/0" % b, blanket['heating']['shoulder'])
-                if "hips" in blanket['heating']:
-                    self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['hips'])
-                if "feed" in blanket['heating']:
-                    self._mqclient.publish("blanket/%s/heat/2" % b, blanket['heating']['feed'])
+            for b in db:
+                blanket = db[b]
+                if "heating" in blanket:
+                    if "shoulder" in blanket['heating']:
+                        self._mqclient.publish("blanket/%s/heat/0" % b, blanket['heating']['shoulder'])
+                    if "hips" in blanket['heating']:
+                        self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['hips'])
+                    if "feed" in blanket['heating']:
+                        self._mqclient.publish("blanket/%s/heat/2" % b, blanket['heating']['feed'])
 
-    def _update_display(self):
-        pass
+            self._update_heating_time = time.time()
+
+    def _update_blouse(self):
+        if time.time() - self._update_blouse_time > 1:
+            self._update_blouse_time = time.time()
 
     def run(self):
         while True:
             try:
                 self._process()           # blocks until new mqtt message arrives
-                self._check_for_wakeup()
+                self._check_for_alarm()
                 self._update_heating()
+                self._update_blouse()
 
             except Exception as e:
                 print(e)
