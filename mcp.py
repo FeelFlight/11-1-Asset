@@ -21,6 +21,9 @@ class Asset(threading.Thread):
                             "hips": 0,
                             "feed": 0
                             }
+            r["alarm"] = {"hour": "23",
+                          "minute": "42",
+                          "enabled": False}
 
         if "shoe" == type:
             pass
@@ -77,21 +80,7 @@ class Asset(threading.Thread):
         k, v = self._workingQueue.get()
         keys = k.split("/")
 
-        if "blanket" == keys[0]:
-            if "startup" == keys[2]:
-                self._setAssetFirmwareVersion(keys[0], keys[1], v)
-            if "ping" == keys[2]:
-                self._setAssetLastSeen(keys[0], keys[1])
-            if "battery" == keys[2]:
-                self._setAssetBatteryLevel(keys[0], keys[1], v)
-        elif "blouse" == keys[0]:
-            if "startup" == keys[2]:
-                self._setAssetFirmwareVersion(keys[0], keys[1], v)
-            if "ping" == keys[2]:
-                self._setAssetLastSeen(keys[0], keys[1])
-            if "battery" == keys[2]:
-                self._setAssetBatteryLevel(keys[0], keys[1], v)
-        elif "shoe" == keys[0]:
+        if "blanket" == keys[0] or "blouse" == keys[0] or "shoe" == keys[0]:
             if "startup" == keys[2]:
                 self._setAssetFirmwareVersion(keys[0], keys[1], v)
             if "ping" == keys[2]:
@@ -143,6 +132,11 @@ class Asset(threading.Thread):
 
     def _check_for_alarm(self):
         if time.time() - self._update_alarm_time > 1:
+            db = self._couch['blanket']
+
+            for b in db:
+                blanket = db[b]
+
             self._update_alarm_time = time.time()
 
     def _update_heating(self):
