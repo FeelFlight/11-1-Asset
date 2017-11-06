@@ -74,9 +74,6 @@ class Asset(threading.Thread):
         else:
             print("key unknown: %s" % k)
 
-
-
-
     def _configureDB(self):
         for dbname in ['blanket', 'blouse', 'shoe']:
             try:
@@ -114,10 +111,31 @@ class Asset(threading.Thread):
     def _on_disconnect(self, client, userdata, msg):
         print("Disconnected")
 
+    def _check_for_wakeup(self):
+        pass
+
+    def _update_heating(self):
+        db = self._couch['blanket']
+
+        for b in db:
+            blanket = db[b]
+            if "heating" in blanket:
+                if "shoulder" in blanket['heating']:
+                    self._mqclient.publish("blanket/%s/heat/0" % b, blanket['heating']['shoulder'])
+                if "legs" in blanket['heating']:
+                    self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['legs'])
+                if "feed" in blanket['heating']:
+                    self._mqclient.publish("blanket/%s/heat/2" % b, blanket['heating']['feed'])
+
+    def _update_display(self):
+        pass
+
     def run(self):
         while True:
             try:
-                self._process()
+                self._process()           # blocks until new mqtt message arrives
+                self._check_for_wakeup()
+                self._update_heating()
             except Exception as e:
                 print(e)
 
@@ -125,4 +143,4 @@ class Asset(threading.Thread):
 if __name__ == '__main__':
     print("11-1-asset started")
     a = Asset()
-    time.sleep(100)
+    time.sleep(42)
