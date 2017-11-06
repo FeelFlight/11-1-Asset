@@ -10,6 +10,23 @@ import paho.mqtt.client as     mqtt
 
 class Asset(threading.Thread):
 
+    def _getDBTemplate(self, type, id):
+        r = {'_id': id}
+
+        if "blouse" == type:
+            pass
+
+        if "blanket" == type:
+            r["heating"] = {"shoulder": 0,
+                            "hips": 0,
+                            "feed": 0
+                            }
+
+        if "shoe" == type:
+            pass
+
+        return r
+
     def _setAssetLastSeen(self, type, id):
         try:
             db = self._couch[type]
@@ -17,7 +34,7 @@ class Asset(threading.Thread):
             if id in db:
                 d = db[id]
             else:
-                d = {'_id': id}
+                d = self._getDBTemplate(type, id)
 
             d['lastseen'] = time.time()
             db.save(d)
@@ -32,7 +49,7 @@ class Asset(threading.Thread):
             if id in db:
                 d = db[id]
             else:
-                d = {'_id': id}
+                d = self._getDBTemplate(type, id)
 
             d['batterylevel'] = l
             d['lastseen']     = time.time()
@@ -48,7 +65,7 @@ class Asset(threading.Thread):
             if id in db:
                 d = db[id]
             else:
-                d = {'_id': id}
+                d = self._getDBTemplate(type, id)
 
             d['firmware'] = v
             d['lastseen'] = time.time()
@@ -68,9 +85,19 @@ class Asset(threading.Thread):
             if "battery" == keys[2]:
                 self._setAssetBatteryLevel(keys[0], keys[1], v)
         elif "blouse" == keys[0]:
-            pass
+            if "startup" == keys[2]:
+                self._setAssetFirmwareVersion(keys[0], keys[1], v)
+            if "ping" == keys[2]:
+                self._setAssetLastSeen(keys[0], keys[1])
+            if "battery" == keys[2]:
+                self._setAssetBatteryLevel(keys[0], keys[1], v)
         elif "shoe" == keys[0]:
-            pass
+            if "startup" == keys[2]:
+                self._setAssetFirmwareVersion(keys[0], keys[1], v)
+            if "ping" == keys[2]:
+                self._setAssetLastSeen(keys[0], keys[1])
+            if "battery" == keys[2]:
+                self._setAssetBatteryLevel(keys[0], keys[1], v)
         else:
             print("key unknown: %s" % k)
 
@@ -122,8 +149,8 @@ class Asset(threading.Thread):
             if "heating" in blanket:
                 if "shoulder" in blanket['heating']:
                     self._mqclient.publish("blanket/%s/heat/0" % b, blanket['heating']['shoulder'])
-                if "legs" in blanket['heating']:
-                    self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['legs'])
+                if "hips" in blanket['heating']:
+                    self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['hips'])
                 if "feed" in blanket['heating']:
                     self._mqclient.publish("blanket/%s/heat/2" % b, blanket['heating']['feed'])
 
@@ -136,6 +163,7 @@ class Asset(threading.Thread):
                 self._process()           # blocks until new mqtt message arrives
                 self._check_for_wakeup()
                 self._update_heating()
+
             except Exception as e:
                 print(e)
 
