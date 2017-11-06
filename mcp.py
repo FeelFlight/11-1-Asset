@@ -17,13 +17,7 @@ class Asset(threading.Thread):
             pass
 
         if "blanket" == type:
-            r["heating"] = {"shoulder": 0,
-                            "hips": 0,
-                            "feed": 0
-                            }
-            r["alarm"] = {"hour": "23",
-                          "minute": "42",
-                          "enabled": False}
+            pass
 
         if "shoe" == type:
             pass
@@ -91,7 +85,7 @@ class Asset(threading.Thread):
             print("key unknown: %s" % k)
 
     def _configureDB(self):
-        for dbname in ['blanket', 'blouse', 'shoe', 'passenger']:
+        for dbname in ['blanket', 'blouse', 'shoe']:
             try:
                 db = self._couch[dbname]
             except Exception as e:
@@ -130,45 +124,10 @@ class Asset(threading.Thread):
     def _on_disconnect(self, client, userdata, msg):
         print("Disconnected")
 
-    def _check_for_alarm(self):
-        if time.time() - self._update_alarm_time > 1:
-            db = self._couch['blanket']
-
-            for b in db:
-                blanket = db[b]
-                if "alarm" in blanket:
-                    if "hour" in blanket['alarm'] and "minute" in blanket['alarm'] and "enabled" in blanket['alarm'] and blanket['alarm']['enabled'] is True:
-                        print("ALARM found:%s" % b)
-
-            self._update_alarm_time = time.time()
-
-    def _update_heating(self):
-        if time.time() - self._update_heating_time > 1:
-            db = self._couch['blanket']
-
-            for b in db:
-                blanket = db[b]
-                if "heating" in blanket:
-                    if "shoulder" in blanket['heating']:
-                        self._mqclient.publish("blanket/%s/heat/0" % b, blanket['heating']['shoulder'])
-                    if "hips" in blanket['heating']:
-                        self._mqclient.publish("blanket/%s/heat/1" % b, blanket['heating']['hips'])
-                    if "feed" in blanket['heating']:
-                        self._mqclient.publish("blanket/%s/heat/2" % b, blanket['heating']['feed'])
-
-            self._update_heating_time = time.time()
-
-    def _update_blouse(self):
-        if time.time() - self._update_blouse_time > 1:
-            self._update_blouse_time = time.time()
-
     def run(self):
         while True:
             try:
                 self._process()           # blocks until new mqtt message arrives
-                self._check_for_alarm()
-                self._update_heating()
-                self._update_blouse()
 
             except Exception as e:
                 print(e)
